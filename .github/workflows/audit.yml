@@ -1,5 +1,5 @@
 
-name: CQA Audit
+name: Linter4 Audit
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout CQA
+      - name: Checkout Linter4
         uses: actions/checkout@v4
 
       - name: Install Lean 4
@@ -20,11 +20,11 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Build CQA
+      - name: Build Linter4
         run: lake build
 
-      - name: Test CQA
+      - name: Test Linter4
         run: lake test
 
-      - name: Scan CQA Lean sources
-        run: lake exe cqa . --json
+      - name: Scan Linter4 Lean sources
+        run: lake exe linter4 .

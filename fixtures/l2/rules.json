@@ -1,0 +1,42 @@
+{
+  "leanProject": {"artifacts": ".lake/build/lib/lean", "modules": ["Main"]},
+  "rules": [
+    {
+      "id": "L2-01", "name": "Domain types", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "strong-domain-types", "params": {
+        "declarations": ["internalRule"], "forbidden": ["String"]
+      }}]
+    },
+    {
+      "id": "L2-04", "name": "Pure test logic", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "pure-test-logic", "params": {
+        "declarations": ["compute"], "forbidden": ["IO", "EIO", "BaseIO"]
+      }}]
+    },
+    {
+      "id": "L2-05", "name": "Effect boundaries", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "effect-boundaries", "params": {
+        "declarations": ["decision"], "forbidden": ["IO.FS"]
+      }}]
+    },
+    {
+      "id": "L2-07", "name": "Proof integrity", "severity": "no-go", "enabled": true,
+      "checks": [{"level": "L2", "checker": "proof-integrity", "params": {
+        "proofs": [{"name": "requiredProof", "sourceModule": "Main", "parameters": 1, "assumptionHeads": ["Nat"]}],
+        "allowedAxioms": []
+      }}]
+    },
+    {
+      "id": "L2-08", "name": "Test registration", "severity": "no-go", "enabled": true,
+      "checks": [{"level": "L2", "checker": "test-registration", "params": {
+        "runner": "main", "suites": [{"registry": "registered", "required": ["requiredJob"]}]
+      }}]
+    },
+    {
+      "id": "L2-10", "name": "Dependencies", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "dependencies", "params": {
+        "modules": ["Main"], "forbidden": ["Infra"], "unused": true
+      }}]
+    }
+  ]
+}

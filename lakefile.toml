@@ -1,6 +1,6 @@
-name = "cqa"
+name = "linter4"
 version = "0.1.0"
-defaultTargets = ["cqa"]
+defaultTargets = ["linter4"]
 testDriver = "cqaTest"
 
 [[lean_lib]]
@@ -10,7 +10,7 @@ name = "Core"
 name = "Checkers"
 
 [[lean_exe]]
-name = "cqa"
+name = "linter4"
 root = "Main"
 
 [[lean_exe]]

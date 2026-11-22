@@ -1,4 +1,4 @@
-# Sapiens4 `dev` — CQA: slop, FP, ADT и проблемы типизации
+# Sapiens4 `dev` — Linter4: slop, FP, ADT и проблемы типизации
 
 **Источник:** [`aleski-green/sapiens4`, ветка `dev`](https://github.com/aleski-green/sapiens4/tree/dev)  
 **Проверенная ревизия:** [`7ae482545bfe4454168d7af48a94e4063cc8188e`](https://github.com/aleski-green/sapiens4/commit/7ae482545bfe4454168d7af48a94e4063cc8188e)  

@@ -1,77 +1,128 @@
-# CQA — Lean L0 and L1
+# Linter4
 
-Scans `.lean` source text at L0 and analyzes syntax with Lean 4.35.0 at L1.
+Scans `.lean` source text at L0, analyzes syntax at L1, and checks compiled Lean
+test declarations at L2. The toolchain is Lean 4.35.0.
 
 ```bash
 lake build
-lake test
-lake exe cqa /path/to/repository
-lake exe cqa /path/to/File.lean --json
-lake exe cqa /path/to/repository --level L0 --summary --output l0.json
-lake exe cqa /path/to/repository --summary --output report.json
+lake exe linter4 /path/to/repository
 ```
 
 `rules.json` is loaded from the current directory by default. It defines rule
 IDs, names, severity, enabled status and checker assignments. Changes take effect
 without recompilation. One rule can select several checkers. Unknown fields,
 checker IDs, unsupported levels and an empty enabled selection are errors.
-Use `--config path.json` to select a different configuration. `--summary` prints
-a Markdown summary with file, error and per-rule counts. `--output` saves the
-full JSON report, including findings and parse errors, independently of stdout.
+There is one mode: every invocation runs all enabled checks together. With no
+path, the current directory is scanned. The text report is printed to stdout;
+the full JSON report is saved as `linter4-report.json` in the current directory.
+There are no level or output switches.
 
-The default level is L1. L0 uses `keyword-scan` with a `patterns` array of
-non-blank, single-line strings. It reports case-sensitive substring matches,
-including in comments, strings and files with invalid syntax. The default
-patterns are `TODO` and `FIXME`. Proof placeholders are checked at L1.
-One invocation scans one level. Both levels read source files only.
+L0 and L1 read the same `.lean` source files in one pass. Each file is counted
+once. L0 findings are retained even when L1 cannot parse the file; such a file
+is excluded from the fully checked count and listed under scan errors.
+
+| L0 scenario | Signal |
+|---|---|
+| Incomplete proofs | Code tokens `sorry`, `admit`, and `axiom`. An axiom declaration is a review candidate. |
+| Unsafe operations | Code tokens `unsafe`, `partial`, and `panic!`. |
+| Arbitrary waits | `IO.sleep` in code. |
+| Hidden errors | `catch`, defaults, and error conversions such as `toOption`. |
+| Ignored results | `discard` and explicit wildcard bindings `let _`. |
+| Debug code | `dbg_trace` in code and text markers `TODO` and `FIXME`. |
+| Hardcoded secrets | Recognizable credential shapes, nonempty literals under credential-like names, and private key headers. Values are redacted. |
+| Disabled tests | Commented test declarations, known skip markers, and disabling flags in test context. |
+
+Both `keyword-scan` and `code-markers` take `patterns`, an array of non-blank,
+single-line strings. `keyword-scan` searches raw text. `code-markers` checks word
+boundaries and masks comments and literals before matching. This is a lexical
+scan. It does not expand macros or inspect expressions inside interpolated strings.
 
 | Checker | Default rule | L1 observation |
 |---|---|---|
-| `constant-assertions` | NG-05 | `requireThat` or `assertThat` receives literal `true` |
-| `proof-placeholders` | NG-06 | Term `sorry`, tactic `sorry` or `admit` |
-| `fallbacks` | W-05 | `getD`, `Except.toOption`, or a catch containing `pure` of a literal/unit |
-| `waits` | EXTRA-WAIT | Explicit `IO.sleep` call |
 | `unchecked-access` | EXTRA-ACCESS | `xs[i]!`, `getElem!`, or `get!` without a recognized local bounds check |
+| `ignored-assertions` | NG-05 | A recognized assertion is passed directly to `discard` or bound to `let _` |
+| `constant-assertions`, `completion-only` | NG-05 | Literal `true` or a standalone assertion of success, exit code, or completion state |
+| `fallbacks` | W-05 | Calls such as `getD` or `toOption`, or a catch supplying a constant result |
+| `waits` | EXTRA-WAIT | `IO.sleep` outside a recognized readiness polling loop with a deadline |
+| `string-states` | W-01 | The same state-like expression compared against distinct string literals |
+| `exact-expectations` | EXTRA-EXPECTATION | A recognized assertion compares against an exact scalar or collection literal |
+| `proof-placeholders` | NG-06 | Term `sorry`, tactic `sorry` or `admit` |
 
 The complete policy descriptions are in [docs/rules.md](docs/rules.md).
 [Additional examples](docs/sapiens4-findings.md) supply investigation targets.
 `EXTRA-*` IDs are additional checks, separate from the main document's numbering.
 
-Every finding is a **review candidate**, including findings for a `no-go` policy.
-Reports include the checker, rule, severity, file, one-based line/column, exact
-source fragment, explanation and suggested action. Neither L0 nor L1 confirms
-a merge blocker.
+L0 and L1 findings are **review candidates**, including findings for a `no-go` policy.
+Reports include the checker, rule, severity, file, one-based line/column, source
+evidence, explanation and suggested action. Evidence overlapping a detected
+credential is redacted. Array bounds, allowed states, process waits and assertion
+strictness may depend on the contract. Findings need human review in that context.
 
-The default text report starts with file coverage, finding and scan error counts.
-Each finding shows its rule, severity, level, source location and exact code,
-followed by `Found` (the observation) and `Review` (the suggested action).
-For example, scanning a file containing `def x := IO.sleep 50` produces:
+The text report groups issues by file. Each row shows the line and column,
+severity, problem, suggested action, level and rule. Severity labels are
+`NO-GO`, `Warning`, and `Could be better`. The final summary counts all issues
+and each severity separately. Illustrative output:
 
 ```text
-CQA — L1
-Checked: 1/1 files
-Findings: 1
+Linter4
+Levels: L0, L1
+Checked 23/23 files
+
+spec/Example.lean
+  12:18  NO-GO           Proof uses sorry. Complete the proof. [L1/NG-06]
+  20:9   Warning         Default may hide missing data. Handle absence. [L1/W-05]
+  31:4   Could be better TODO marks unfinished work. Resolve the marker. [L0/EXTRA-TASK]
+
+3 issues: 1 NO-GO, 1 Warning, 1 Could be better
 Scan errors: 0
-Result: Complete
-
-[warning] EXTRA-WAIT · L1
-Example.lean:1:10
-
-  IO.sleep 50
-
-Found: A call to IO.sleep was found.
-Review: If this waits for readiness, verify readiness and bound the total wait.
 ```
 
-`Complete` means scanning finished, including when findings exist. `Incomplete`
-means some files could not be checked; details appear in a separate `Scan errors`
-section. Counts cover files successfully scanned at the selected level, not
-application verification.
-JSON retains the existing fields and adds `level` to each finding and scan error.
+The checked count covers the source scan; L2 reports its compiled-module scope
+separately when configured. Findings need review; their severity alone does not
+establish a confirmed defect. JSON also
+includes source evidence, checker IDs, and errors. Its `level` is `FULL`, and
+`levels` lists the enabled levels; each finding and error retains its own level.
 
 `0` means the scan completed in its declared scope; `2` means invalid input,
 configuration, I/O failure or incomplete parsing. JSON reports use `advisory`
 or `incomplete`; they never claim that the application passed verification.
+
+## L2 on Sapiens4
+
+```bash
+lake -d /path/to/sapiens4/spec build +Main +pure.ProviderReply
+lake exe linter4 /path/to/sapiens4
+```
+
+L2 reads the elaborated declarations from `.olean` files and source positions
+and resolved references from `.ilean` files. `leanProject.modules` selects the
+root modules under `spec/`. The shipped profile selects `Main`, `pure.ProviderReply`
+and their spec imports. Standalone executables such as `io.Provider` and the Lake configuration
+lie outside that profile. The audit reads the artifacts without running tests or
+loading initializers. Missing or older artifacts make L2 incomplete.
+
+| Rule | Configured verification |
+|---|---|
+| L2-01 | Find forbidden types in selected declaration types, including through type aliases. |
+| L2-04 | Find forbidden effect types in the results of selected pure helpers. |
+| L2-05 | Follow resolved declaration dependencies through the project and check forbidden declaration or module prefixes. |
+| L2-07 | Verify the named theorem, its parameter count and configured assumption type heads, and its transitive axioms. |
+| L2-08 | Check named jobs in literal `(label, declaration)` lists and check that the runner references each list. |
+| L2-10 | Check forbidden direct imports and suggest imports with no exclusive recorded use. |
+
+Each checker reads `params` from `rules.json`. The Sapiens4 proof and job lists
+are a baseline from revision `7ae4825`. Replace them with approved requirements
+for a contract audit. The theorem check does not compare full theorem statements.
+Registration does not establish which jobs actually run. Import suggestions can
+miss dependencies on syntax or initialization.
+
+L2 reports `verified-violation` for demonstrated mismatches with a configured
+obligation, and `suspected` for design warnings. `NOT_VERIFIED` lists unavailable
+or unspecified checks. L2-02, L2-03, L2-06 and L2-09 are pending contracts and
+detectors. Exit codes report audit completion rather than merge eligibility.
+
+[Good and Bad](fixtures/l2) are manual verification fixtures for the six active
+checks. They do not run as part of `lake test`.
 
 `Main.lean` handles CLI and initialization. `Core/Types.lean` defines shared
 types, `Config.lean` loads and validates rules, `Registry.lean` registers

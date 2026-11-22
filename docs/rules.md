@@ -1,4 +1,4 @@
-# CQA rules for AI-generated code
+# Linter4 rules for AI-generated code
 
 **Source checked:** [Sapiens4 `dev/spec`](https://github.com/aleski-green/sapiens4/tree/dev/spec), 22 November 2026.  
 **Purpose:** Catch incorrect behavior and unnecessary AI-generated complexity before merging.
@@ -196,7 +196,7 @@ getStatus x = readStatus x
 
 ## Additional verified `dev` test-harness review candidates
 
-These are concrete *risks in the code*, **not confirmed runtime defects**. They suggest useful future CQA rules about test reliability.
+These are concrete *risks in the code*, **not confirmed runtime defects**. They suggest useful future Linter4 rules about test reliability.
 
 | Candidate | Link to real `dev` code | Why review it? | Suggested improvement |
 |---|---|---|---|
@@ -204,7 +204,7 @@ These are concrete *risks in the code*, **not confirmed runtime defects**. They 
 | Fixture can wait without a limit | [`spec/io/Provider.lean` line 20](https://github.com/aleski-green/sapiens4/blob/dev/spec/io/Provider.lean#L17-L21) | `while ... hold.pathExists` has no local timeout; a stuck fixture can keep waiting. | Add a deadline or explicit cancellation. |
 | Browser build runs for headless tests | [`spec/Main.lean` lines 48–56](https://github.com/aleski-green/sapiens4/blob/dev/spec/Main.lean#L48-L56) | Builds browser assets before selecting the requested test group. | Select the group first, and run only its required setup. |
 
-## How to verify the CQA rules themselves
+## How to verify the Linter4 rules themselves
 
 ```text
 Each rule

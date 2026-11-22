@@ -14,12 +14,20 @@ private partial def contains (p : Syntax → Bool) (s : Syntax) : Bool :=
     !s.isOfKind ``Parser.Term.doCatchMatch && (p s || s.getArgs.any (contains p))
 
 private def fallback (s : Syntax) : Bool :=
-  methodCall "getD" s || call `Except.toOption s ||
-    (s.isOfKind ``Parser.Term.doCatch &&
-      contains (fun t => call `pure t && t[1].getArgs.back?.any constant) s[4])
+  methodCall "getD" s || methodCall "getObjValD" s || methodCall "toOption" s ||
+    let body := if s.isOfKind ``Parser.Term.doCatch then s[4]
+      else if s.isOfKind ``Parser.Term.doCatchMatch then s[1] else .missing
+    contains (fun t => (call `pure t && t[1].getArgs.back?.any constant) ||
+      (t.isOfKind ``Parser.Term.doReturn && t[1].getArgs.back?.any constant)) body
+
+private def message (s : Syntax) : String :=
+  if methodCall "toOption" s then "Conversion to Option discards the error details."
+  else if methodCall "getD" s || methodCall "getObjValD" s then
+    "A default value may hide missing data."
+  else "Exception handler contains a fallback result that may hide a failure."
 
 def check : AstCheck :=
-  ⟨"fallbacks", "A getD call, Except.toOption call, or constant pure expression in a catch was found.",
-    "Check whether the default or recovery is intentional and preserves required failures.", findSyntax fallback⟩
+  ⟨"fallbacks", message,
+    "Handle absence or errors explicitly unless recovery is intentional.", findSyntax fallback⟩
 
 end Cqa.L1.Fallbacks

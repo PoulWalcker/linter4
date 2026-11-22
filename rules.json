@@ -1,32 +1,57 @@
 {
+  "leanProject": {
+    "artifacts": ".lake/build/lib/lean",
+    "modules": ["Main", "pure.ProviderReply"],
+    "pending": [
+      "L2-02: ID roles and type contracts are unspecified",
+      "L2-03: closed state sets are unspecified",
+      "L2-06: critical error contracts are unspecified",
+      "L2-09: shared assertion and test policy contracts are unspecified",
+      "L2-07: the current theorem baseline is configured; an approved required theorem inventory is unspecified",
+      "L2-08: the current suite baseline is configured; an approved required test inventory is unspecified"
+    ]
+  },
   "rules": [
     {
       "id": "NG-05",
       "name": "Fake or weakened tests",
       "severity": "no-go",
       "enabled": true,
-      "checks": [{"level": "L1", "checker": "constant-assertions"}]
+      "checks": [
+        {"level": "L1", "checker": "constant-assertions"},
+        {"level": "L1", "checker": "ignored-assertions"},
+        {"level": "L1", "checker": "completion-only"}
+      ]
     },
     {
       "id": "NG-06",
       "name": "Fake formal proof",
       "severity": "no-go",
       "enabled": true,
-      "checks": [{"level": "L1", "checker": "proof-placeholders"}]
+      "checks": [
+        {"level": "L0", "checker": "code-markers", "patterns": ["sorry", "admit", "axiom"]},
+        {"level": "L1", "checker": "proof-placeholders"}
+      ]
     },
     {
       "id": "W-05",
       "name": "Speculative fallback hides failure",
       "severity": "warning",
       "enabled": true,
-      "checks": [{"level": "L1", "checker": "fallbacks"}]
+      "checks": [
+        {"level": "L0", "checker": "code-markers", "patterns": ["catch", "getD", "getObjValD", "toOption", "Except.ok"]},
+        {"level": "L1", "checker": "fallbacks"}
+      ]
     },
     {
       "id": "EXTRA-WAIT",
       "name": "Delay and polling review",
       "severity": "warning",
       "enabled": true,
-      "checks": [{"level": "L1", "checker": "waits"}]
+      "checks": [
+        {"level": "L0", "checker": "code-markers", "patterns": ["IO.sleep"]},
+        {"level": "L1", "checker": "waits"}
+      ]
     },
     {
       "id": "EXTRA-ACCESS",
@@ -37,10 +62,132 @@
     },
     {
       "id": "EXTRA-TASK",
-      "name": "Unfinished work markers",
+      "name": "Debug and unfinished work markers",
       "severity": "improvement",
       "enabled": true,
-      "checks": [{"level": "L0", "checker": "keyword-scan", "patterns": ["TODO", "FIXME"]}]
+      "checks": [
+        {"level": "L0", "checker": "keyword-scan", "patterns": ["TODO", "FIXME"]},
+        {"level": "L0", "checker": "code-markers", "patterns": ["dbg_trace"]}
+      ]
+    },
+    {
+      "id": "EXTRA-UNSAFE",
+      "name": "Unsafe operations",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L0", "checker": "code-markers", "patterns": ["unsafe", "partial", "panic!"]}]
+    },
+    {
+      "id": "EXTRA-IGNORED",
+      "name": "Ignored results",
+      "severity": "improvement",
+      "enabled": true,
+      "checks": [{"level": "L0", "checker": "code-markers", "patterns": ["discard", "let _ ←", "let _ <-", "let _ :="]}]
+    },
+    {
+      "id": "EXTRA-SECRET",
+      "name": "Possible hardcoded credential",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L0", "checker": "hardcoded-secrets"}]
+    },
+    {
+      "id": "EXTRA-DISABLED-TEST",
+      "name": "Possibly disabled test",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L0", "checker": "disabled-tests"}]
+    },
+    {
+      "id": "W-01",
+      "name": "String-based domain states",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "string-states"}]
+    },
+    {
+      "id": "EXTRA-EXPECTATION",
+      "name": "Exact test expectations",
+      "severity": "improvement",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "exact-expectations"}]
+    },
+    {
+      "id": "L2-01", "name": "Strong domain types", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "strong-domain-types", "params": {
+        "declarations": ["Spec.LocalWrite.allowed", "Spec.LocalWrite.cases"],
+        "forbidden": ["Lean.Json", "String"]
+      }}]
+    },
+    {
+      "id": "L2-04", "name": "Pure test logic", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "pure-test-logic", "params": {
+        "declarations": ["Spec.Denial.accepts", "Spec.LocalWrite.allowed", "Spec.LocalWrite.cases"],
+        "forbidden": ["IO", "EIO", "BaseIO"]
+      }}]
+    },
+    {
+      "id": "L2-05", "name": "Effect boundaries", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "effect-boundaries", "params": {
+        "declarations": ["Spec.Denial.accepts", "Spec.LocalWrite.allowed", "Spec.LocalWrite.cases"],
+        "forbidden": ["IO", "EIO", "BaseIO", "io", "jobs"]
+      }}]
+    },
+    {
+      "id": "L2-07", "name": "Proof integrity baseline", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "proof-integrity", "params": {
+        "allowedAxioms": ["propext", "Quot.sound", "Classical.choice"],
+        "proofs": [
+          {"name": "Spec.acceptedDenialProtectsEveryMarker", "sourceModule": "pure.Privacy", "parameters": 4, "assumptionHeads": ["Spec.Denial", "Nat", "List", "Eq"]},
+          {"name": "Spec.everyLocalWriteIsExercised", "sourceModule": "pure.Privacy", "parameters": 1, "assumptionHeads": ["Spec.LocalWrite"]},
+          {"name": "Spec.onlyTwoLocalWritesAreAllowed", "sourceModule": "pure.Privacy", "parameters": 0, "assumptionHeads": []}
+        ]
+      }}]
+    },
+    {
+      "id": "L2-08", "name": "Test registration baseline", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "test-registration", "params": {
+        "runner": "main",
+        "suites": [
+          {"registry": "headlessJobs", "required": [
+            "Spec.User.retainModelSettingsAcrossRestart",
+            "Spec.User.completeWorkThroughMcp",
+            "Spec.User.retainPrivateNotesAndBookmarks",
+            "Spec.User.finishOneScheduledReview",
+            "Spec.User.delegateOneAccountableReview",
+            "Spec.SystemJobs.preserveInterruptedWorkDuringUpgrade",
+            "Spec.SystemJobs.recoverSavedWorkAfterStorageRepair",
+            "Spec.SystemJobs.releaseExclusiveComputerAccessOnCancellation",
+            "Spec.Founder.reviewFailedWorkBeforeRetry",
+            "Spec.User.resumeConversationAfterRestart",
+            "Spec.User.keepScheduledWorkPausedUntilItsOwnerResumes",
+            "Spec.SystemJobs.rejectUntrustedRequestsWithoutDisclosingLocalState",
+            "Spec.SystemJobs.keepFilePreviewsAndAttachmentsWithTheirOwner",
+            "Spec.Founder.retainControlOverScopeAndSuspendedWork",
+            "Spec.SystemJobs.keepLocalCorporaSeparateAcrossRestart",
+            "Spec.SystemJobs.eraseCancelledVoiceDraftsAcrossRestart"
+          ]},
+          {"registry": "browserJobs", "required": [
+            "Spec.SystemJobs.preserveBrowserApplicationBehavior",
+            "Spec.SystemJobs.requireAnOpenBrowserForRemoteCrypto",
+            "Spec.Founder.resumeRemoteWorkWhenBrowserReopens",
+            "Spec.Founder.processRedeliveredRemoteWorkOnce",
+            "Spec.Founder.withdrawConsentBeforeTheOtherDeviceApproves",
+            "Spec.Founder.approveOneDeviceThenRevokeItsMailbox"
+          ]},
+          {"registry": "desktopJobs", "required": [
+            "Spec.User.sendAndReadOneDesktopReply",
+            "Spec.User.pauseAndResumeFromTheDesktop"
+          ]}
+        ]
+      }}]
+    },
+    {
+      "id": "L2-10", "name": "Test module dependencies", "severity": "warning", "enabled": true,
+      "checks": [{"level": "L2", "checker": "dependencies", "params": {
+        "modules": ["pure.Observations", "pure.Privacy", "pure.ProviderReply"],
+        "forbidden": ["io", "jobs"], "unused": true
+      }}]
     }
   ]
 }
