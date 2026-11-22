@@ -1,2 +1,4 @@
 .lake/
 .idea/
+/reports/
+/linter4-report.json

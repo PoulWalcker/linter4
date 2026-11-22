@@ -121,9 +121,6 @@ obligation, and `suspected` for design warnings. `NOT_VERIFIED` lists unavailabl
 or unspecified checks. L2-02, L2-03, L2-06 and L2-09 are pending contracts and
 detectors. Exit codes report audit completion rather than merge eligibility.
 
-[Good and Bad](fixtures/l2) are manual verification fixtures for the six active
-checks. They do not run as part of `lake test`.
-
 `Main.lean` handles CLI and initialization. `Core/Types.lean` defines shared
 types, `Config.lean` loads and validates rules, `Registry.lean` registers
 checkers, `Engine.lean` prepares shared analysis data and runs selected checks,

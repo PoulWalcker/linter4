@@ -1,7 +1,0 @@
-{"status": "advisory",
- "level": "L0",
- "language": "Lean",
- "findings": [],
- "files": 23,
- "errors": [],
- "checks": ["keyword-scan"]}
