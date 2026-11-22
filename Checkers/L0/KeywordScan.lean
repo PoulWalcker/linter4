@@ -13,7 +13,7 @@ private def scan (rule : Rule) (patterns : Array String) (file source : String) 
         column := column + chunk.length
         findings := findings.push {
           checker := checkerId, rule := rule.id, severity := rule.severity
-          file, line, column, evidence := pattern
+          level := "L0", file, line, column, evidence := pattern
           message := "Configured text matches this source location."
           fix := "Review the surrounding source and resolve the marker if applicable."
         }

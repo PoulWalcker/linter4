@@ -39,7 +39,35 @@ The complete policy descriptions are in [docs/rules.md](docs/rules.md).
 
 Every finding is a **review candidate**, including findings for a `no-go` policy.
 Reports include the checker, rule, severity, file, one-based line/column, exact
-source fragment, explanation and suggested fix.
+source fragment, explanation and suggested action. Neither L0 nor L1 confirms
+a merge blocker.
+
+The default text report starts with file coverage, finding and scan error counts.
+Each finding shows its rule, severity, level, source location and exact code,
+followed by `Found` (the observation) and `Review` (the suggested action).
+For example, scanning a file containing `def x := IO.sleep 50` produces:
+
+```text
+CQA — L1
+Checked: 1/1 files
+Findings: 1
+Scan errors: 0
+Result: Complete
+
+[warning] EXTRA-WAIT · L1
+Example.lean:1:10
+
+  IO.sleep 50
+
+Found: A call to IO.sleep was found.
+Review: If this waits for readiness, verify readiness and bound the total wait.
+```
+
+`Complete` means scanning finished, including when findings exist. `Incomplete`
+means some files could not be checked; details appear in a separate `Scan errors`
+section. Counts cover files successfully scanned at the selected level, not
+application verification.
+JSON retains the existing fields and adds `level` to each finding and scan error.
 
 `0` means the scan completed in its declared scope; `2` means invalid input,
 configuration, I/O failure or incomplete parsing. JSON reports use `advisory`

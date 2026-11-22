@@ -56,8 +56,8 @@ def audit (path : System.FilePath) (selected : SelectedChecks) : IO Report := do
       let source ← IO.FS.readFile file
       match ← scan file.toString source with
       | .ok found => findings := findings ++ found
-      | .error message => errors := errors.push ⟨file.toString, message⟩
-    catch e => errors := errors.push ⟨file.toString, e.toString⟩
+      | .error message => errors := errors.push { file := file.toString, message, level }
+    catch e => errors := errors.push { file := file.toString, message := e.toString, level }
   return {
     status := if errors.isEmpty then "advisory" else "incomplete"
     level, files := paths.size, checks := checks.toList.eraseDups.toArray, findings, errors

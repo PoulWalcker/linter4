@@ -8,7 +8,7 @@ private def constantAssertion (s : Syntax) : Bool :=
     s[1].getArgs.size == 2 && s[1].getArgs.back?.any (named `true)
 
 def check : AstCheck :=
-  ⟨"constant-assertions", "Assertion receives literal true; callee is unresolved at L1.",
+  ⟨"constant-assertions", "A requireThat or assertThat call receives literal true.",
     "Assert an observed outcome; verify that a known wrong outcome fails.", findSyntax constantAssertion⟩
 
 end Cqa.L1.ConstantAssertions

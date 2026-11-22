@@ -46,6 +46,7 @@ structure Finding where
   rule : String
   severity : Severity
   status : String := "candidate"
+  level : String := "L1"
   file : String
   line : Nat
   column : Nat
@@ -71,6 +72,7 @@ inductive SelectedChecks where
 structure ScanError where
   file : String
   message : String
+  level : String := "L1"
   deriving ToJson
 
 structure Report where

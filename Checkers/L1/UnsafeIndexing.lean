@@ -112,7 +112,7 @@ where
       (if uncheckedAccess s && !guarded bounds s then #[s] else #[])
 
 def check : AstCheck :=
-  ⟨"unchecked-access", "Unchecked access without a recognized local bounds check.",
-    "Use checked access or establish its precondition.", unchecked⟩
+  ⟨"unchecked-access", "An unchecked access was found without a recognized local bounds check.",
+    "Check the bounds guarantee or use checked access.", unchecked⟩
 
 end Cqa.L1.UnsafeIndexing
