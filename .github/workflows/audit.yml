@@ -1,0 +1,22 @@
+
+name: CQA Audit
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: leanprover/lean-action@v1
+        with:
+          build: true
+          test: false
+
+      - name: Download Sapiens4
+        run: git clone --depth 1 --branch dev https://github.com/aleski-green/sapiens4.git /tmp/sapiens4
+
+      - name: Run CQA
+        run: lake exe cqa /tmp/sapiens4
