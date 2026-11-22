@@ -19,7 +19,7 @@ private def fallback (s : Syntax) : Bool :=
       contains (fun t => call `pure t && t[1].getArgs.back?.any constant) s[4])
 
 def check : AstCheck :=
-  ⟨"fallbacks", "Default or caught-error branch may hide a failure.",
-    "Preserve a typed error unless the default is part of the contract.", findSyntax fallback⟩
+  ⟨"fallbacks", "A getD call, Except.toOption call, or constant pure expression in a catch was found.",
+    "Check whether the default or recovery is intentional and preserves required failures.", findSyntax fallback⟩
 
 end Cqa.L1.Fallbacks

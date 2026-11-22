@@ -4,7 +4,7 @@ namespace Cqa.L1.FixedWaits
 open Lean
 
 def check : AstCheck :=
-  ⟨"waits", "Delay call; review completion and cancellation conditions.",
-    "Prefer an observable event for completion; bound polling.", findSyntax (call `IO.sleep)⟩
+  ⟨"waits", "A call to IO.sleep was found.",
+    "If this waits for readiness, verify readiness and bound the total wait.", findSyntax (call `IO.sleep)⟩
 
 end Cqa.L1.FixedWaits

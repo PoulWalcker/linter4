@@ -45,8 +45,8 @@ def audit (path : System.FilePath)
       let source ← IO.FS.readFile file
       match ← Cqa.L1.parse env file.toString source with
       | .ok ctx => findings := findings ++ inspect selected ctx
-      | .error message => errors := errors.push ⟨file.toString, message⟩
-    catch e => errors := errors.push ⟨file.toString, e.toString⟩
+      | .error message => errors := errors.push { file := file.toString, message }
+    catch e => errors := errors.push { file := file.toString, message := e.toString }
   return {
     status := if errors.isEmpty then "advisory" else "incomplete"
     files := paths.size, checks := selected.map (·.2.id), findings, errors
