@@ -16,7 +16,7 @@ def renderReport (report : Report) (json : Bool) : String :=
   let findings := report.findings.toList.map fun f =>
     s!"REVIEW {f.rule} ({f.severity.text}) [{f.checker}] {f.file}:{f.line}:{f.column}\n  {f.evidence}\n  {f.message}\n  Fix: {f.fix}"
   let errors := report.errors.toList.map fun e => s!"INCOMPLETE {e.file}: {e.message}"
-  let summary := s!"L1 Lean: {report.files} files; {report.findings.size} review candidates; {report.status}."
+  let summary := s!"{report.level} {report.language}: {report.files} files; {report.findings.size} review candidates; {report.status}."
   String.intercalate "\n" (findings ++ errors ++ [summary])
 
 end Cqa

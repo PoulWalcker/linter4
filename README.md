@@ -1,12 +1,13 @@
-# CQA — Lean L1
+# CQA — Lean L0 and L1
 
-Audits `.lean` source syntax using Lean 4.35.0's parser. No external dependencies.
+Scans `.lean` source text at L0 and analyzes syntax with Lean 4.35.0 at L1.
 
 ```bash
 lake build
 lake test
 lake exe cqa /path/to/repository
 lake exe cqa /path/to/File.lean --json
+lake exe cqa /path/to/repository --level L0 --summary --output l0.json
 lake exe cqa /path/to/repository --summary --output report.json
 ```
 
@@ -18,6 +19,12 @@ Use `--config path.json` to select a different configuration. `--summary` prints
 a Markdown summary with file, error and per-rule counts. `--output` saves the
 full JSON report, including findings and parse errors, independently of stdout.
 
+The default level is L1. L0 uses `keyword-scan` with a `patterns` array of
+non-blank, single-line strings. It reports case-sensitive substring matches,
+including in comments, strings and files with invalid syntax. The default
+patterns are `TODO` and `FIXME`. Proof placeholders are checked at L1.
+One invocation scans one level. Both levels read source files only.
+
 | Checker | Default rule | L1 observation |
 |---|---|---|
 | `constant-assertions` | NG-05 | `requireThat` or `assertThat` receives literal `true` |
@@ -28,12 +35,11 @@ full JSON report, including findings and parse errors, independently of stdout.
 
 The complete policy descriptions are in [docs/rules.md](docs/rules.md).
 [Additional examples](docs/sapiens4-findings.md) supply investigation targets.
-Only the observations above are implemented. `EXTRA-*` IDs are additional
-checks, separate from the main document's numbering.
+`EXTRA-*` IDs are additional checks, separate from the main document's numbering.
 
 Every finding is a **review candidate**, including findings for a `no-go` policy.
 Reports include the checker, rule, severity, file, one-based line/column, exact
-source fragment, explanation and suggested fix. L1 cannot confirm a merge blocker.
+source fragment, explanation and suggested fix.
 
 `0` means the scan completed in its declared scope; `2` means invalid input,
 configuration, I/O failure or incomplete parsing. JSON reports use `advisory`
@@ -42,8 +48,8 @@ or `incomplete`; they never claim that the application passed verification.
 `Main.lean` handles CLI and initialization. `Core/Types.lean` defines shared
 types, `Config.lean` loads and validates rules, `Registry.lean` registers
 checkers, `Engine.lean` prepares shared analysis data and runs selected checks,
-and `Report.lean` renders results. Independent algorithms live in `Checkers/L1/`;
-`Syntax.lean` prepares one AST and source map per file. `Tests.lean` calibrates
+and `Report.lean` renders results. Independent algorithms live in `Checkers/L0/`
+and `Checkers/L1/`. `Syntax.lean` prepares one AST and source map per L1 file. `Tests.lean` calibrates
 the analysis interface with positive, negative and near-miss examples.
 
 The parser uses Lean's standard grammar and Lake DSL for files importing Lake.

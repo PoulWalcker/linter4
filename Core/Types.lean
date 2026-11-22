@@ -26,6 +26,7 @@ instance : ToJson Severity where
 structure CheckConfig where
   level : String
   checker : String
+  patterns : Option (Array String)
   deriving FromJson
 
 structure Rule where
@@ -58,6 +59,14 @@ structure AstCheck where
   message : String
   fix : String
   run : Syntax → Array Syntax
+
+structure TextCheck where
+  id : String
+  run : Rule → Array String → String → String → Array Finding
+
+inductive SelectedChecks where
+  | text (checks : Array (Rule × TextCheck × Array String))
+  | ast (checks : Array (Rule × AstCheck))
 
 structure ScanError where
   file : String

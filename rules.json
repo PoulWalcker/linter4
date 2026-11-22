@@ -34,6 +34,13 @@
       "severity": "warning",
       "enabled": true,
       "checks": [{"level": "L1", "checker": "unchecked-access"}]
+    },
+    {
+      "id": "EXTRA-TASK",
+      "name": "Unfinished work markers",
+      "severity": "improvement",
+      "enabled": true,
+      "checks": [{"level": "L0", "checker": "keyword-scan", "patterns": ["TODO", "FIXME"]}]
     }
   ]
 }

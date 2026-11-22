@@ -3,6 +3,9 @@ import Checkers.L1.Syntax
 namespace Cqa
 open Lean L1
 
+private def sortFindings (findings : Array Finding) : Array Finding :=
+  findings.qsort fun a b => a.line < b.line || (a.line == b.line && a.column < b.column)
+
 def inspect (selected : Array (Rule × AstCheck)) (ctx : SyntaxContext) : Array Finding := Id.run do
   let mut findings := #[]
   for (rule, check) in selected do
@@ -15,7 +18,7 @@ def inspect (selected : Array (Rule × AstCheck)) (ctx : SyntaxContext) : Array 
           evidence := ctx.source.toRawSubstring.extract start (s.getTailPos?.getD start) |>.toString
           message := check.message, fix := check.fix
         }
-  return findings.qsort fun a b => a.line < b.line || (a.line == b.line && a.column < b.column)
+  return sortFindings findings
 
 private def excluded (path : System.FilePath) : Bool :=
   path.components.any fun part =>
@@ -32,24 +35,32 @@ private partial def filesAt (path : System.FilePath) : IO (Array System.FilePath
   if path.extension == some "lean" then return #[path]
   return #[]
 
-def audit (path : System.FilePath)
-    (selected : Array (Rule × AstCheck)) : IO Report := do
+def audit (path : System.FilePath) (selected : SelectedChecks) : IO Report := do
   unless ← path.pathExists do throw <| IO.userError s!"Path does not exist: {path}"
   let paths := (← filesAt path).qsort (fun a b => a.toString < b.toString)
   if paths.isEmpty then throw <| IO.userError s!"No Lean files: {path}"
-  let env ← initParser
+  let scanner : IO (String × Array String × (String → String → IO (Except String (Array Finding)))) :=
+    match selected with
+    | .text checks => pure ("L0", checks.map (fun (_, check, _) => check.id), fun file source =>
+        pure (.ok (sortFindings (checks.foldl (fun found (rule, check, patterns) =>
+          found ++ check.run rule patterns file source) #[]))))
+    | .ast checks => do
+      let env ← initParser
+      pure ("L1", checks.map (·.2.id), fun file source =>
+        (·.map (inspect checks)) <$> Cqa.L1.parse env file source)
+  let (level, checks, scan) ← scanner
   let mut findings := #[]
   let mut errors := #[]
   for file in paths do
     try
       let source ← IO.FS.readFile file
-      match ← Cqa.L1.parse env file.toString source with
-      | .ok ctx => findings := findings ++ inspect selected ctx
+      match ← scan file.toString source with
+      | .ok found => findings := findings ++ found
       | .error message => errors := errors.push ⟨file.toString, message⟩
     catch e => errors := errors.push ⟨file.toString, e.toString⟩
   return {
     status := if errors.isEmpty then "advisory" else "incomplete"
-    files := paths.size, checks := selected.map (·.2.id), findings, errors
+    level, files := paths.size, checks := checks.toList.eraseDups.toArray, findings, errors
   }
 
 end Cqa
