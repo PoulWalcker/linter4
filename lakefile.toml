@@ -1,0 +1,7 @@
+name = "cqa"
+version = "0.1.0"
+defaultTargets = ["cqa"]
+
+[[lean_exe]]
+name = "cqa"
+root = "Main"
