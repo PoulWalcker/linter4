@@ -1,0 +1,39 @@
+{
+  "rules": [
+    {
+      "id": "NG-05",
+      "name": "Fake or weakened tests",
+      "severity": "no-go",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "constant-assertions"}]
+    },
+    {
+      "id": "NG-06",
+      "name": "Fake formal proof",
+      "severity": "no-go",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "proof-placeholders"}]
+    },
+    {
+      "id": "W-05",
+      "name": "Speculative fallback hides failure",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "fallbacks"}]
+    },
+    {
+      "id": "EXTRA-WAIT",
+      "name": "Delay and polling review",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "waits"}]
+    },
+    {
+      "id": "EXTRA-ACCESS",
+      "name": "Unchecked access review",
+      "severity": "warning",
+      "enabled": true,
+      "checks": [{"level": "L1", "checker": "unchecked-access"}]
+    }
+  ]
+}

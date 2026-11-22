@@ -1,48 +1,63 @@
-# Minimal CQA (Lean 4)
+# CQA — Lean L1
 
-A **source-pattern scanner** for Sapiens4's `.lean` files. No LLM, server,
-GitHub integration, or extra dependencies.
-
-## Usage
+Audits `.lean` source syntax using Lean 4.35.0's parser. No external dependencies.
 
 ```bash
 lake build
-lake exe cqa /absolute/path/to/sapiens4
-# Optional demo mode: exit 1 if any potential finding is present
-lake exe cqa /absolute/path/to/sapiens4 --strict
+lake test
+lake exe cqa /path/to/repository
+lake exe cqa /path/to/File.lean --json
+lake exe cqa /path/to/repository --summary --output report.json
 ```
 
-Example output:
+`rules.json` is loaded from the current directory by default. It defines rule
+IDs, names, severity, enabled status and checker assignments. Changes take effect
+without recompilation. One rule can select several checkers. Unknown fields,
+checker IDs, unsupported levels and an empty enabled selection are errors.
+Use `--config path.json` to select a different configuration. `--summary` prints
+a Markdown summary with file, error and per-rule counts. `--output` saves the
+full JSON report, including findings and parse errors, independently of stdout.
 
-```text
-REVIEW W-01  /path/spec/Example.lean:15  Check whether a fixed wait is necessary
-Scanned 100 Lean files; 1 review candidates.
-PASS: scan completed; findings are not confirmed violations.
-```
+| Checker | Default rule | L1 observation |
+|---|---|---|
+| `constant-assertions` | NG-05 | `requireThat` or `assertThat` receives literal `true` |
+| `proof-placeholders` | NG-06 | Term `sorry`, tactic `sorry` or `admit` |
+| `fallbacks` | W-05 | `getD`, `Except.toOption`, or a catch containing `pure` of a literal/unit |
+| `waits` | EXTRA-WAIT | Explicit `IO.sleep` call |
+| `unchecked-access` | EXTRA-ACCESS | `xs[i]!`, `getElem!`, or `get!` without a recognized local bounds check |
 
-## Built-in candidates
+The complete policy descriptions are in [docs/rules.md](docs/rules.md).
+[Additional examples](docs/sapiens4-findings.md) supply investigation targets.
+Only the observations above are implemented. `EXTRA-*` IDs are additional
+checks, separate from the main document's numbering.
 
-- **W-01**: `IO.sleep` (fixed wait)
-- **W-04**: `]!` or `.get!` (unchecked access)
-- **NG-13**: `sorry` or `admit` (possible incomplete proof)
+Every finding is a **review candidate**, including findings for a `no-go` policy.
+Reports include the checker, rule, severity, file, one-based line/column, exact
+source fragment, explanation and suggested fix. L1 cannot confirm a merge blocker.
 
-These **do not prove a rule was violated**. `NG-13` must only block when an
-*actually required* proof is incomplete or untrusted. The tool therefore
-prints `REVIEW`, not `NO-GO`, and returns 0 on a successful default scan. The optional `--strict` flag is a demo, **not safe as a merge gate**.
+`0` means the scan completed in its declared scope; `2` means invalid input,
+configuration, I/O failure or incomplete parsing. JSON reports use `advisory`
+or `incomplete`; they never claim that the application passed verification.
 
-## Exit codes
+`Main.lean` handles CLI and initialization. `Core/Types.lean` defines shared
+types, `Config.lean` loads and validates rules, `Registry.lean` registers
+checkers, `Engine.lean` prepares shared analysis data and runs selected checks,
+and `Report.lean` renders results. Independent algorithms live in `Checkers/L1/`;
+`Syntax.lean` prepares one AST and source map per file. `Tests.lean` calibrates
+the analysis interface with positive, negative and near-miss examples.
 
-- `0`: scan ran successfully; no definitive merge decision
-- `1`: `--strict` enabled and a potential finding was detected (may be false positive)
-- `2`: bad CLI arguments or directory (other I/O exceptions also stop execution)
+The parser uses Lean's standard grammar and Lake DSL for files importing Lake.
+Audited imports and commands are not executed or elaborated. Comments, strings and quoted syntax do not produce
+operation findings; expressions inside interpolated strings are inspected.
+Local grammar extensions are reported as unsupported. Imported custom syntax
+may fail to parse. Nested catches are inspected independently without attributing
+an inner fallback to its outer catch. Bounds recognition covers simple size
+comparisons in the true branch and `[:array.size]` loops. Rebinding, assignments
+and ambiguous scopes discard facts. Calls such as `requireThat`, `assertThat`
+and `throw` supply no bounds information at L1. Interprocedural guarantees,
+macro expansion, name resolution, proof trust and runtime behavior require
+later levels.
 
-## Limits
-
-This is a text scanner, not an AST analyzer. It ignores `--` line comments,
-but may report strings or block comments as false positives. It does not run
-tests, check behavior, prove architecture quality, support PR URLs, or enforce
-all 21 rules. Add real verification and explicit No-Go criteria before using it
-as a merge gate.
-
-The Lean toolchain is selected as `stable` for easy setup; pin the precise
-version approved by your team for reproducible runs.
+Haskell and PureScript are outside this stage's scope. Directory scans include
+only `.lean` files and skip symlinks and `.git`, `.lake`, `.idea`, `node_modules`,
+`dist`, `target`, `build` directories. No Lean files is an error.

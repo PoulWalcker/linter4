@@ -21,13 +21,10 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
       - name: Build CQA
-        run: |
-          lake update
-          lake build
+        run: lake build
 
-      - name: Download Sapiens4
-        run: |
-          git clone --depth 1 --branch dev https://github.com/aleski-green/sapiens4.git /tmp/sapiens4
+      - name: Test CQA
+        run: lake test
 
-      - name: Run CQA
-        run: lake exe cqa /tmp/sapiens4
+      - name: Scan CQA Lean sources
+        run: lake exe cqa . --json

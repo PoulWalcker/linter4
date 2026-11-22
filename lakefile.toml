@@ -1,7 +1,18 @@
 name = "cqa"
 version = "0.1.0"
 defaultTargets = ["cqa"]
+testDriver = "cqaTest"
+
+[[lean_lib]]
+name = "Core"
+
+[[lean_lib]]
+name = "Checkers"
 
 [[lean_exe]]
 name = "cqa"
 root = "Main"
+
+[[lean_exe]]
+name = "cqaTest"
+root = "Tests"
